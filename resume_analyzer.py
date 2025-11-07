@@ -59,9 +59,33 @@ class ContactExtractor:
     
     @staticmethod
     def extract_email(text: str) -> List[str]:
-        """Extrait les adresses email"""
+        """Extrait les adresses email en nettoyant les préfixes parasites"""
+        
+        # Pattern pour détecter les emails
         pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        return re.findall(pattern, text)
+        emails = re.findall(pattern, text)
+        
+        cleaned_emails = []
+        for email in emails:
+            # Liste des préfixes parasites à supprimer(les parasites proviennent d'une mauvaise extraction du contenu du cv)
+            parasites = ['envelpe', 'envelope', 'phone', 'phonealt', 'linkedin', 'mail', 'email']
+            
+            email_lower = email.lower()
+            cleaned = email
+            
+            # Vérifier et supprimer les préfixes parasites
+            for parasite in parasites:
+                if email_lower.startswith(parasite):
+                    # Supprimer le préfixe parasite
+                    cleaned = email[len(parasite):]
+                    break
+            
+            # Ajouter l'email nettoyé s'il est valide
+            if cleaned and '@' in cleaned and re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$', cleaned):
+                cleaned_emails.append(cleaned.lower())
+        
+        return list(set(cleaned_emails))
+
     
     @staticmethod
     def extract_phone(text: str) -> List[str]:
@@ -826,6 +850,7 @@ class ResumeAnalyzer:
         print("🔍 Extraction du texte du PDF...")
         raw_text = self.pdf_extractor.extract_text_from_pdf(pdf_path)
         clean_text = self.pdf_extractor.clean_text(raw_text)
+        #print(clean_text)
         
         print("📧 Extraction des informations de contact...")
         contacts = self.contact_extractor.extract_all_contacts(clean_text,pdf_path)
