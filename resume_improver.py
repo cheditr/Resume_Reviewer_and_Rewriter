@@ -82,27 +82,27 @@ class ResumeImprover:
         Returns:
             Dictionnaire avec analyse originale et texte amélioré
         """
-        print("🔍 Phase 1: Analyse NLP du CV...")
+        print("🔍 Phase 1: NLP Analysis of CV...")
         analysis_result = self.analyzer_api.analyze(pdf_path)
         
-        print(f"✅ Analyse terminée - Score: {analysis_result['score']}/100")
+        print(f"✅ Analysis completed - Score: {analysis_result['score']}/100")
         print(f"📊 Niveau: {analysis_result['level']}")
-        print(f"⚠️  {len(analysis_result['issues_to_fix']['high_priority'])} problèmes critiques détectés")
+        print(f"⚠️  {len(analysis_result['issues_to_fix']['high_priority'])} critical issues detected")
         
-        print("\n🤖 Phase 2: Amélioration avec LLM...")
+        print("\n🤖 Phase 2: AI-Powered Improvements...")
         improvements = self._improve_sections(
             analysis_result['full_analysis'], 
             language
         )
         
-        print("\n📄 Phase 3: Génération du CV LaTeX amélioré...")
+        print("\n📄 Phase 3: Generating Improved LaTeX CV...")
         latex_content = self._generate_latex_resume(
             analysis_result,
             improvements,
             language
         )
         
-        print("\n✨ Phase 4: Génération du rapport final...")
+        print("\n✨ Phase 4: Generating Final Report...")
         final_report = self._generate_final_report(
             analysis_result, 
             improvements
@@ -116,9 +116,8 @@ class ResumeImprover:
         }
     
     def _improve_sections(self, full_analysis: Dict, language: str) -> Dict:
-        """
-        Améliore chaque section problématique avec le LLM
-        """
+       
+        """Improves each problematic section with LLM"""
         improvements = {}
         analysis = full_analysis['analysis']
         
@@ -129,7 +128,7 @@ class ResumeImprover:
         )
         
         if experience_text:
-            print("  📝 Amélioration de la section Expérience...")
+            print("  📝 Improving Experience section...")
             improvements['experience'] = self._improve_experience_section(
                 experience_text,
                 analysis['verb_analysis'],
@@ -137,30 +136,30 @@ class ResumeImprover:
                 language
             )
         
-        # 2. Générer un résumé professionnel si manquant
+        # 2. Generate professional summary if missing
         if not analysis['sections'].get('summary'):
-            print("  ✍️  Génération du résumé professionnel...")
+            print("  ✍️  Generating professional summary...")
             improvements['professional_summary'] = self._generate_professional_summary(
                 analysis,
                 language
             )
         
-        # 3. Améliorer la présentation des compétences
+        # 3. Improve skills presentation
         skills_text = self.analyzer_api.analyzer.section_detector.extract_section_content(
             analysis['clean_text'], 
             'skills'
         )
         
         if skills_text:
-            print("  🎯 Optimisation de la section Compétences...")
+            print("  🎯 Optimizing Skills section...")
             improvements['skills'] = self._improve_skills_section(
                 skills_text,
                 language
             )
         
-        # 4. Générer des suggestions de bullet points
+        # 4. Generate bullet point suggestions
         if analysis['bullets']['bullet_count'] < 5:
-            print("  • Génération de suggestions de bullet points...")
+            print("  • Generating bullet point suggestions...")
             improvements['bullet_suggestions'] = self._generate_bullet_suggestions(
                 experience_text if experience_text else analysis['clean_text'],
                 language
@@ -489,23 +488,23 @@ CRITICAL FORMATTING RULES (MUST FOLLOW):
 Generate ONLY the content (no \\documentclass, no preamble, just the body):
 """
         
-        print("  🤖 Génération du CV LaTeX avec l'IA...")
+        print("  🤖 Generating LaTeX CV with AI...")
         response = self.groq_client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,  # Plus bas pour respecter le format
+            temperature=0.3,  # Lower to respect format
             max_tokens=4000
         )
         
         latex_content = response.choices[0].message.content.strip()
         
-        # Nettoyer le contenu (enlever les balises markdown si présentes)
+        # Clean content (remove markdown tags if present)
         latex_content = latex_content.replace('```latex', '').replace('```', '')
         
-        # Nettoyer les doubles \begin{document} si présents
+        # Clean double \begin{document} if present
         latex_content = latex_content.replace(r'\begin{document}', '').replace(r'\end{document}', '')
-        
-        # Insérer le contenu dans le template
+
+        # Insert content into template
         full_latex = self.LATEX_TEMPLATE.replace('%CONTENT_PLACEHOLDER%', latex_content)
         
         return full_latex
@@ -558,62 +557,65 @@ Generate ONLY the content (no \\documentclass, no preamble, just the body):
     
     def _generate_final_report(self, analysis: Dict, improvements: Dict) -> str:
         """
-        Génère un rapport final avec toutes les améliorations
+        Generates final report with all improvements
         """
         report = []
         report.append("=" * 80)
-        report.append("📋 RAPPORT D'AMÉLIORATION DE CV - UtopiaHire")
+        report.append("📋 CV IMPROVEMENT REPORT - UtopiaHire")
         report.append("=" * 80)
         report.append("")
         
-        # Score et niveau
-        report.append(f"🎯 SCORE INITIAL: {analysis['score']}/100 - {analysis['level']}")
+        # Score and level
+        report.append(f"🎯 INITIAL SCORE: {analysis['score']}/100 - {analysis['level']}")
         report.append("")
         
-        # Problèmes critiques résolus
+        # Critical issues resolved
         high_priority = analysis['issues_to_fix']['high_priority']
         if high_priority:
-            report.append("✅ PROBLÈMES CRITIQUES TRAITÉS:")
+            report.append("✅ CRITICAL ISSUES ADDRESSED:")
             for issue in high_priority[:5]:
                 report.append(f"  • {issue['issue']}")
             report.append("")
         
+        # Improvements by section
+        report.append("📄 IMPROVEMENTS MADE:")
+        report.append("")
         # Améliorations par section
         report.append("🔄 AMÉLIORATIONS APPORTÉES:")
         report.append("")
         
         if 'professional_summary' in improvements:
-            report.append("1️⃣  RÉSUMÉ PROFESSIONNEL (NOUVEAU)")
+            report.append("1️⃣  PROFESSIONAL SUMMARY (NEW)")
             report.append("-" * 60)
             report.append(improvements['professional_summary']['generated_summary'])
             report.append("")
         
         if 'experience' in improvements:
-            report.append("2️⃣  SECTION EXPÉRIENCE (AMÉLIORÉE)")
+            report.append("2️⃣  EXPERIENCE SECTION (IMPROVED)")
             report.append("-" * 60)
-            report.append("Changements effectués:")
+            report.append("Changes made:")
             for change in improvements['experience']['changes_made']:
                 report.append(f"  ✓ {change}")
             report.append("")
-            report.append("TEXTE AMÉLIORÉ:")
+            report.append("IMPROVED TEXT:")
             report.append(improvements['experience']['improved'])
             report.append("")
         
         if 'skills' in improvements:
-            report.append("3️⃣  COMPÉTENCES (RÉORGANISÉES)")
+            report.append("3️⃣  SKILLS (REORGANIZED)")
             report.append("-" * 60)
             report.append(improvements['skills']['improved'])
             report.append("")
         
         if 'bullet_suggestions' in improvements:
-            report.append("4️⃣  EXEMPLES DE BULLET POINTS OPTIMISÉS")
+            report.append("4️⃣  OPTIMIZED BULLET POINT EXAMPLES")
             report.append("-" * 60)
             for i, bullet in enumerate(improvements['bullet_suggestions'], 1):
                 report.append(f"  {i}. {bullet}")
             report.append("")
         
-        # Actions suivantes recommandées
-        report.append("🎬 PROCHAINES ÉTAPES:")
+        # Recommended next steps
+        report.append("🎬 NEXT STEPS:")
         medium_priority = analysis['issues_to_fix']['medium_priority']
         if medium_priority:
             for i, issue in enumerate(medium_priority[:3], 1):
@@ -621,33 +623,33 @@ Generate ONLY the content (no \\documentclass, no preamble, just the body):
         
         report.append("")
         report.append("=" * 80)
-        report.append("✨ Améliorations générées par UtopiaHire - Powered by NLP + LLM")
+        report.append("✨ Improvements generated by UtopiaHire - Powered by NLP + LLM")
         report.append("=" * 80)
         
         return "\n".join(report)
     
     def compile_latex_to_pdf(self, latex_content: str, output_path: str) -> bool:
         """
-        Compile le fichier LaTeX en PDF
+        Compiles LaTeX file to PDF
         
         Args:
-            latex_content: Contenu LaTeX complet
-            output_path: Chemin de sortie pour le PDF (sans extension)
+            latex_content: Complete LaTeX content
+            output_path: Output path for PDF (without extension)
             
         Returns:
-            True si la compilation réussit, False sinon
+            True if compilation succeeds, False otherwise
         """
-        # Créer un répertoire temporaire
+        # Create temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
             tex_file = os.path.join(temp_dir, 'resume.tex')
             
-            # Écrire le fichier .tex
+            # Write .tex file
             with open(tex_file, 'w', encoding='utf-8') as f:
                 f.write(latex_content)
             
             try:
-                print("  🔨 Compilation LaTeX en cours...")
-                # Compiler avec pdflatex
+                print("  🔨 Compiling LaTeX...")
+                # Compile with pdflatex
                 result = subprocess.run(
                     ['pdflatex', '-interaction=nonstopmode', '-output-directory', temp_dir, tex_file],
                     capture_output=True,
@@ -655,60 +657,60 @@ Generate ONLY the content (no \\documentclass, no preamble, just the body):
                     timeout=30
                 )
                 
-                # Vérifier si le PDF a été créé
+                # Check if PDF was created
                 pdf_file = os.path.join(temp_dir, 'resume.pdf')
                 if os.path.exists(pdf_file):
-                    # Copier le PDF vers la destination finale
+                    # Copy PDF to final destination
                     import shutil
                     final_pdf = f"{output_path}.pdf"
                     shutil.copy(pdf_file, final_pdf)
-                    print(f"  ✅ PDF généré avec succès: {final_pdf}")
+                    print(f"  ✅ PDF generated successfully: {final_pdf}")
                     return True
                 else:
-                    print("  ❌ Erreur: PDF non généré")
-                    print(f"  Log LaTeX:\n{result.stdout}")
+                    print("  ❌ Error: PDF not generated")
+                    print(f"  LaTeX log:\n{result.stdout}")
                     return False
                     
             except subprocess.TimeoutExpired:
-                print("  ❌ Timeout lors de la compilation LaTeX")
+                print("  ❌ Timeout during LaTeX compilation")
                 return False
             except FileNotFoundError:
-                print("  ❌ pdflatex non trouvé. Installez TeX Live ou MiKTeX")
+                print("  ❌ pdflatex not found. Install TeX Live or MiKTeX")
                 print("     Ubuntu/Debian: sudo apt-get install texlive-full")
                 print("     macOS: brew install mactex")
                 return False
             except Exception as e:
-                print(f"  ❌ Erreur lors de la compilation: {str(e)}")
+                print(f"  ❌ Error during compilation: {str(e)}")
                 return False
-    
+
     def save_improvements(self, result: Dict, output_dir: str = "."):
         """
-        Sauvegarde tous les résultats dans des fichiers
+        Saves all results to files
         """
-        # Créer le dossier de sortie
+        # Create output folder
         os.makedirs(output_dir, exist_ok=True)
         
-        # 1. Rapport textuel complet
+        # 1. Complete text report
         report_path = os.path.join(output_dir, "improvement_report.txt")
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(result['final_report'])
-        print(f"✅ Rapport sauvegardé: {report_path}")
+        print(f"✅ Report saved: {report_path}")
         
-        # 2. Fichier LaTeX
+        # 2. LaTeX file
         latex_path = os.path.join(output_dir, "improved_resume.tex")
         with open(latex_path, 'w', encoding='utf-8') as f:
             f.write(result['latex_content'])
-        print(f"✅ Fichier LaTeX sauvegardé: {latex_path}")
+        print(f"✅ LaTeX file saved: {latex_path}")
         
-        # 3. Compiler en PDF
+        # 3. Compile to PDF
         pdf_base_path = os.path.join(output_dir, "improved_resume")
         pdf_success = self.compile_latex_to_pdf(result['latex_content'], pdf_base_path)
         
         if not pdf_success:
-            print("⚠️  Le PDF n'a pas pu être généré automatiquement.")
-            print(f"   Vous pouvez compiler manuellement le fichier: {latex_path}")
+            print("⚠️  PDF could not be generated automatically.")
+            print(f"   You can manually compile the file: {latex_path}")
         
-        # 4. JSON structuré pour intégration
+        # 4. Structured JSON for integration
         json_path = os.path.join(output_dir, "improvements.json")
         json_data = {
             'original_score': result['original_analysis']['score'],
@@ -718,20 +720,21 @@ Generate ONLY the content (no \\documentclass, no preamble, just the body):
         }
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(json_data, f, indent=2, ensure_ascii=False)
-        print(f"✅ Données JSON sauvegardées: {json_path}")
+        print(f"✅ JSON data saved: {json_path}")
         
-        # 5. Sections améliorées séparées (pour copier-coller)
+        # 5. Separate improved sections (for copy-paste)
         if 'experience' in result['improvements']:
             exp_path = os.path.join(output_dir, "improved_experience.txt")
             with open(exp_path, 'w', encoding='utf-8') as f:
                 f.write(result['improvements']['experience']['improved'])
-            print(f"✅ Expérience améliorée: {exp_path}")
+            print(f"✅ Improved experience: {exp_path}")
         
         if 'professional_summary' in result['improvements']:
             summary_path = os.path.join(output_dir, "professional_summary.txt")
             with open(summary_path, 'w', encoding='utf-8') as f:
                 f.write(result['improvements']['professional_summary']['generated_summary'])
-            print(f"✅ Résumé professionnel: {summary_path}")
+            print(f"✅ Professional summary: {summary_path}")
+
 
 
 # ============================================
@@ -740,30 +743,30 @@ Generate ONLY the content (no \\documentclass, no preamble, just the body):
 
 def main():
     """
-    Exemple d'utilisation du système complet
+    Complete usage example of the system
     """
     import sys
     
     print("=" * 80)
     print("🚀 UtopiaHire - Resume Improver with LaTeX Generation")
-    print("   Système intelligent d'amélioration de CV (NLP + LLM + LaTeX)")
+    print("   Intelligent CV improvement system (NLP + LLM + LaTeX)")
     print("=" * 80)
     print("")
     
     # Configuration
     if len(sys.argv) < 3:
         print("Usage: python resume_improver.py <cv.pdf> <groq_api_key> [language]")
-        print("\nExemples:")
-        print("  python resume_improver.py mon_cv.pdf gsk_xxxxx en")
-        print("  python resume_improver.py mon_cv.pdf gsk_xxxxx fr")
-        print("\nPour obtenir une clé API Groq gratuite:")
-        print("  1. Visitez https://console.groq.com")
-        print("  2. Créez un compte gratuit")
-        print("  3. Générez une clé API")
-        print("\nDépendances LaTeX:")
+        print("\nExamples:")
+        print("  python resume_improver.py my_cv.pdf gsk_xxxxx en")
+        print("  python resume_improver.py my_cv.pdf gsk_xxxxx fr")
+        print("\nTo get a free Groq API key:")
+        print("  1. Visit https://console.groq.com")
+        print("  2. Create a free account")
+        print("  3. Generate an API key")
+        print("\nLaTeX dependencies:")
         print("  Ubuntu/Debian: sudo apt-get install texlive-full texlive-fonts-extra")
         print("  macOS: brew install mactex")
-        print("  Windows: Installez MiKTeX (https://miktex.org)")
+        print("  Windows: Install MiKTeX (https://miktex.org)")
         return
     
     pdf_path = sys.argv[1]
@@ -771,31 +774,31 @@ def main():
     language = sys.argv[3] if len(sys.argv) > 3 else 'en'
     
     try:
-        # Créer l'improver
+        # Create improver
         improver = ResumeImprover(api_key)
         
-        # Analyser et améliorer
-        print(f"\n📄 Traitement du CV: {pdf_path}")
-        print(f"🌍 Langue: {'Français' if language == 'fr' else 'English'}")
+        # Analyze and improve
+        print(f"\n📄 Processing CV: {pdf_path}")
+        print(f"🌍 Language: {'French' if language == 'fr' else 'English'}")
         print("-" * 80)
         
         result = improver.analyze_and_improve(pdf_path, language)
         
-        # Afficher le rapport
+        # Display report
         print("\n" + result['final_report'])
         
-        # Sauvegarder les résultats
-        print("\n💾 Sauvegarde des résultats...")
+        # Save results
+        print("\n💾 Saving results...")
         output_dir = pdf_path.replace('.pdf', '_improved')
         improver.save_improvements(result, output_dir)
         
-        print(f"\n✨ Traitement terminé avec succès!")
-        print(f"📁 Tous les fichiers sont dans: {output_dir}/")
-        print(f"📄 CV amélioré: {output_dir}/improved_resume.pdf")
-        print(f"📝 Fichier LaTeX: {output_dir}/improved_resume.tex")
+        print(f"\n✨ Processing completed successfully!")
+        print(f"📁 All files are in: {output_dir}/")
+        print(f"📄 Improved CV: {output_dir}/improved_resume.pdf")
+        print(f"📝 LaTeX file: {output_dir}/improved_resume.tex")
         
     except Exception as e:
-        print(f"\n❌ Erreur: {str(e)}")
+        print(f"\n❌ Error: {str(e)}")
         import traceback
         traceback.print_exc()
 

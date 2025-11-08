@@ -20,7 +20,7 @@ from resume_improver import ResumeImprover
 # Configuration
 app = FastAPI(
     title="UtopiaHire Resume API",
-    description="API pour l'analyse et l'amélioration de CV avec NLP + LLM",
+    description="API for CV analysis and improvement with NLP + LLM",
     version="1.0.0"
 )
 
@@ -79,7 +79,7 @@ class ImprovementResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    """Endpoint de santé de l'API"""
+    """API health endpoint"""
     return {
         "service": "UtopiaHire Resume API",
         "version": "1.0.0",
@@ -116,7 +116,7 @@ async def analyze_resume(file: UploadFile = File(...)):
         Analyse complète du CV avec score, sections, issues, etc.
     """
     if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Le fichier doit être un PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
     
     # Sauvegarder le fichier temporairement
     temp_path = os.path.join(TEMP_DIR, f"analyze_{datetime.now().timestamp()}_{file.filename}")
@@ -149,11 +149,10 @@ async def analyze_resume(file: UploadFile = File(...)):
             },
             timestamp=datetime.now().isoformat()
         )
-        
         return response
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
     
     finally:
         # Nettoyer le fichier temporaire
@@ -177,16 +176,16 @@ async def improve_resume(
         CV amélioré avec fichiers LaTeX et PDF générés
     """
     if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Le fichier doit être un PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
     
     if not GROQ_API_KEY:
         raise HTTPException(
             status_code=503, 
-            detail="Service d'amélioration indisponible: clé API Groq manquante"
+            detail="Improvement service unavailable: missing Groq API key"
         )
     
     if language not in ['en', 'fr']:
-        raise HTTPException(status_code=400, detail="Langue doit être 'en' ou 'fr'")
+        raise HTTPException(status_code=400, detail="Language must be 'en' or 'fr'")
     
     # Sauvegarder le fichier temporairement
     temp_path = os.path.join(TEMP_DIR, f"improve_{datetime.now().timestamp()}_{file.filename}")
@@ -244,7 +243,7 @@ async def improve_resume(
         return response
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'amélioration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Improvement error: {str(e)}")
     
     finally:
         # Nettoyer le fichier temporaire
@@ -268,12 +267,12 @@ async def full_process(
         Analyse complète + CV amélioré
     """
     if not file.filename.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Le fichier doit être un PDF")
+        raise HTTPException(status_code=400, detail="File must be a PDF")
     
     if not GROQ_API_KEY:
         raise HTTPException(
             status_code=503, 
-            detail="Service indisponible: clé API Groq manquante"
+            detail="Service unavailable: missing Groq API key"
         )
     
     # Sauvegarder le fichier temporairement
@@ -327,7 +326,7 @@ async def full_process(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
     finally:
         if os.path.exists(temp_path):
@@ -356,7 +355,7 @@ async def download_file(timestamp: str, file_type: str):
             break
     
     if not folder:
-        raise HTTPException(status_code=404, detail="Fichiers non trouvés")
+        raise HTTPException(status_code=404, detail="Files not found")
     
     # Mapper le type de fichier
     file_mapping = {
@@ -367,13 +366,13 @@ async def download_file(timestamp: str, file_type: str):
     }
     
     if file_type not in file_mapping:
-        raise HTTPException(status_code=400, detail="Type de fichier invalide")
+        raise HTTPException(status_code=400, detail="Invalid file type")
     
     filename, media_type = file_mapping[file_type]
     file_path = os.path.join(folder, filename)
     
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail=f"Fichier {filename} non trouvé")
+        raise HTTPException(status_code=404, detail=f"File {filename} not found")
     
     return FileResponse(
         path=file_path,
@@ -382,54 +381,6 @@ async def download_file(timestamp: str, file_type: str):
     )
 
 
-@app.get("/api/v1/recommendations/{score}")
-async def get_recommendations_by_score(score: int):
-    """
-    Retourne des recommandations génériques basées sur un score
-    
-    Args:
-        score: Score du CV (0-100)
-    """
-    if score < 0 or score > 100:
-        raise HTTPException(status_code=400, detail="Score doit être entre 0 et 100")
-    
-    if score >= 80:
-        level = "Excellent"
-        tips = [
-            "Votre CV est de très haute qualité",
-            "Assurez-vous de le maintenir à jour",
-            "Personnalisez-le pour chaque candidature"
-        ]
-    elif score >= 60:
-        level = "Bon"
-        tips = [
-            "Ajoutez plus de résultats quantifiables",
-            "Renforcez vos verbes d'action",
-            "Vérifiez la cohérence du formatage"
-        ]
-    elif score >= 40:
-        level = "Moyen"
-        tips = [
-            "Restructurez vos sections principales",
-            "Ajoutez des métriques concrètes",
-            "Utilisez des verbes d'action forts",
-            "Vérifiez les informations de contact"
-        ]
-    else:
-        level = "À améliorer"
-        tips = [
-            "Ajoutez toutes les sections essentielles",
-            "Complétez vos informations de contact",
-            "Utilisez des bullet points pour les réalisations",
-            "Quantifiez vos accomplissements",
-            "Évitez les verbes passifs"
-        ]
-    
-    return {
-        "score": score,
-        "level": level,
-        "recommendations": tips
-    }
 
 
 # ============================================
@@ -454,7 +405,7 @@ async def general_exception_handler(request, exc):
         status_code=500,
         content={
             "success": False,
-            "error": "Erreur interne du serveur",
+            "error": "Internal server error",
             "detail": str(exc),
             "timestamp": datetime.now().isoformat()
         }

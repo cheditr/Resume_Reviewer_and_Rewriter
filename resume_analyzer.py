@@ -38,7 +38,7 @@ class PDFExtractor:
                     text += page.extract_text()
                 return text
         except Exception as e:
-            raise Exception(f"Erreur lors de l'extraction du PDF: {str(e)}")
+            raise Exception(f"Error while extracting PDF: {str(e)}")
     
     @staticmethod
     def clean_text(text: str) -> str:
@@ -85,8 +85,6 @@ class ContactExtractor:
                 cleaned_emails.append(cleaned.lower())
         
         return list(set(cleaned_emails))
-
-    
     @staticmethod
     def extract_phone(text: str) -> List[str]:
         """Extrait les numéros de téléphone"""
@@ -117,7 +115,7 @@ class ContactExtractor:
                         links.append(link["uri"])
             doc.close()
         except Exception as e:
-            print(f"[Erreur extraction PDF] {e}")
+            print(f"[PDF Extraction ErrorF] {e}")
         return list(set(links))
     
     @staticmethod
@@ -139,6 +137,7 @@ class ContactExtractor:
             'linkedin': linkedin_links,
             'github': ContactExtractor.extract_github(text)
         }
+
 
     @staticmethod
     def extract_location(text: str) :
@@ -258,53 +257,54 @@ class SectionDetector:
     
     SECTION_PATTERNS = {
         'experience': [
-            r'^(?:professional\s+)?(?:work\s+)?(?:internship\s+)?experience',
-            r'^employment\s+history',
-            r'^work\s+history',
-            r'^career\s+history',
-            r'^expérience\s+professionnelle'
+            r'^\s*(?:professional|work|internship|employment|career)\s*(?:history|experience)\b',
+            r'^\s*(?:employment|work|career)\s+history\b',
+            r'^\s*(?:experience|experiences)\b',
+            r'^\s*(?:exp[eé]rience(?:s)?(?:\s+professionnelle)?|historique\s+professionnel)\b',
+            r'^\s*(?:poste[s]?|positions?)\b'
         ],
         'education': [
-            r'^education(?:al\s+background)?',
-            r'^academic\s+(?:background|qualifications)',
-            r'^qualifications',
-            r'^formation'
+            r'^\s*(?:education|educational|academic)\b',
+            r'^\s*(?:academic\s+(?:background|qualifications))\b',
+            r'^\s*(?:qualifications|degrees|education)\b',
+            r'^\s*(?:formation|dipl[oô]mes|[eé]tudes)\b'
         ],
         'skills': [
-            r'^(?:technical\s+)?skills',
-            r'^competenc(?:ies|es)',
-            r'^expertise',
-            r'^compétences'
+            r'^\s*(?:technical\s+)?skills\b',
+            r'^\s*(?:competenc(?:ies|es)|comp[eé]tences)\b',
+            r'^\s*(?:expertise|technical\s+skills)\b',
+            r'^\s*(?:skills\s+and\s+tools|outils)\b'
         ],
         'projects': [
-            r'^academic\s+projects?',
-            r'^(?:key\s+)?projects?',
-            r'^portfolio',
-            r'^projets'
+            r'^\s*(?:academic\s+projects?|key\s+projects?|projects?)\b',
+            r'^\s*(?:portfolio|portefeuille|projets)\b',
+            r'^\s*(?:projets\s+acad[eé]miques|projets)\b'
         ],
         'certifications': [
-            r'^(?:professional\s+)?certifications?',
-            r'^licenses?',
-            r'^credentials'
+            r'^\s*(?:professional\s+)?certifications?\b',
+            r'^\s*(?:certificates?|certificats?)\b',
+            r'^\s*(?:licenses?|licences?)\b',
+            r'^\s*(?:credentials)\b'
         ],
         'summary': [
-            r'^(?:professional\s+)?summary',
-            r'^profile',
-            r'^objective',
-            r'^about\s+me',
-            r'^résumé'
+            r'^\s*(?:professional\s+)?summary\b',
+            r'^\s*(?:profile|profil)\b',
+            r'^\s*(?:objective|objective\s+statement)\b',
+            r'^\s*(?:about\s+me|a\s+propos)\b',
+            r'^\s*(?:r[ée]sum[ée]|r[eé]sum[e]?)\b'
         ],
         'associative': [
-            r'^associative\s+experience',
-            r'^associative\s+life',
-            r'^volunteer\s+experience',
-            r'^activities'
+            r'^\s*(?:associative\s+experience|associative\s+life)\b',
+            r'^\s*(?:vie\s+associative|vie\s+d\'association|association(?:s)?)\b',
+            r'^\s*(?:volunteer\s+experience|volunteering|b[eé]n[eé]volat|volontariat|volunteer)\b',
+            r'^\s*(?:activities|activit[eé]s|community\s+service)\b'
         ],
         'languages': [
-            r'^languages?',
-            r'^langues?'
+            r'^\s*(?:languages|langues)\b',
+            r'^\s*(?:language\s+skills|comp[eé]tences\s+linguistiques)\b'
         ]
     }
+    
     
     @staticmethod
     def detect_sections(text: str) -> Dict[str, bool]:
@@ -335,7 +335,7 @@ class SectionDetector:
                                 if pos < min_pos:
                                     min_pos = pos
                 section_content = text[start:min_pos].strip()
-                print(f"[DEBUG] Section '{section_name}' trouvée avec pattern '{pattern}':\n{section_content}\n{'-'*50}")
+                print(f"[DEBUG] Section '{section_name}' found with pattern '{pattern}':\n{section_content}\n{'-'*50}")
                 return section_content
         return ""
 
@@ -353,7 +353,7 @@ class QualityAnalyzer:
         try:
             self.nlp = spacy.load("en_core_web_sm")
         except:
-            print("Modèle spaCy non trouvé. Installez-le avec: python -m spacy download en_core_web_sm")
+            print("spaCy model not found. Install it using: python -m spacy download en_core_web_sm")
             self.nlp = None
     
     # Listes de référence
@@ -534,15 +534,15 @@ class FormatAnalyzer:
         # Vérifier les CAPS excessives
         caps_ratio = sum(1 for c in text if c.isupper()) / len(text) if text else 0
         if caps_ratio > 0.3:
-            issues.append("Trop de texte en MAJUSCULES")
+            issues.append("Too much text in uppercase")
         
         # Vérifier les espaces multiples
         if re.search(r'\s{3,}', text):
-            issues.append("Espaces multiples détectés")
+            issues.append("Multiple spaces detected")
         
         # Vérifier l'absence de structure
         if '\n' not in text[:200]:  # Pas de retour à la ligne dans les 200 premiers caractères
-            issues.append("Manque de structure/paragraphes")
+            issues.append("Lack of structure/paragraphs")
         
         # Vérifier les dates
         date_patterns = [
@@ -552,7 +552,7 @@ class FormatAnalyzer:
         ]
         has_dates = any(re.search(pattern, text, re.IGNORECASE) for pattern in date_patterns)
         if not has_dates:
-            issues.append("Dates d'expérience manquantes ou mal formatées")
+            issues.append("Missing or poorly formatted experience dates")
         
         return {
             'issues': issues,
@@ -670,18 +670,17 @@ class ResumeScorer:
         breakdown['language_quality'] = filler_score
         score += filler_score
         
-        # Score final
+        # Quality level in English
         final_score = min(100, max(0, score))
-        
-        # Niveau de qualité
+
         if final_score >= 80:
             level = "Excellent"
         elif final_score >= 60:
-            level = "Bon"
+            level = "Good"
         elif final_score >= 40:
-            level = "Moyen"
+            level = "Fair"
         else:
-            level = "À améliorer"
+            level = "Needs Improvement"
         
         return {
             'total_score': final_score,
@@ -708,30 +707,30 @@ class RecommendationEngine:
             recommendations.append({
                 'priority': 'HIGH',
                 'category': 'Contact',
-                'issue': 'Email manquant',
-                'recommendation': 'Ajoutez une adresse email professionnelle visible en haut du CV'
+                'issue': 'Missing email',
+                'recommendation': 'Add a professional email address at the top of your CV'
             })
         if not contacts.get('phones'):
             recommendations.append({
                 'priority': 'HIGH',
                 'category': 'Contact',
-                'issue': 'Numéro de téléphone manquant',
-                'recommendation': 'Ajoutez un numéro de téléphone pour faciliter le contact'
+                'issue': 'Missing phone number',
+                'recommendation': 'Add a phone number to facilitate contact'
             })
         if not contacts.get('location'):
             recommendations.append({
                 'priority': 'MEDIUM',
                 'category': 'Contact',
-                'issue': 'Localisation manquante',
-                'recommendation': 'Indiquez votre ville et pays pour aider les recruteurs à situer votre profil'
+                'issue': 'Missing location',
+                'recommendation': 'Indicate your city and country to help recruiters locate your profile'
             })
         
         if not contacts.get('linkedin'):
             recommendations.append({
                 'priority': 'MEDIUM',
                 'category': 'Contact',
-                'issue': 'Profil LinkedIn manquant',
-                'recommendation': 'Ajoutez votre profil LinkedIn pour augmenter votre visibilité'
+                'issue': 'Missing LinkedIn profile',
+                'recommendation': 'Add your LinkedIn profile to increase your visibility'
             })
         
         # Sections manquantes
@@ -742,66 +741,66 @@ class RecommendationEngine:
                 recommendations.append({
                     'priority': 'HIGH',
                     'category': 'Structure',
-                    'issue': f'Section {section} manquante',
-                    'recommendation': f'Ajoutez une section claire pour {section}'
+                    'issue': f'Missing {section} section',
+                    'recommendation': f'Add a clear section for {section}'
                 })
-        non_critical_sections= ['projects', 'certifications', 'summary', 'associative', 'languages']
+        non_critical_sections = ['projects', 'certifications', 'summary', 'associative', 'languages']
         for section in non_critical_sections:
             if not sections.get(section):
                 recommendations.append({
                     'priority': 'MEDIUM',
                     'category': 'Structure',
-                    'issue': f'Section {section} manquante',
-                    'recommendation': f'Envisagez d\'ajouter une section pour {section} si pertinent'
+                    'issue': f'Missing {section} section',
+                    'recommendation': f'Consider adding a section for {section} if relevant'
                 })
         
-        # Problèmes de verbes
+        # Verb issues
         verbs = analysis_results.get('verb_analysis', {})
         if verbs.get('passive_count', 0) > 3:
             recommendations.append({
                 'priority': 'HIGH',
-                'category': 'Contenu',
-                'issue': f'{verbs["passive_count"]} verbes passifs détectés',
-                'recommendation': 'Remplacez les verbes passifs par des verbes d\'action (ex: "Managed" au lieu de "Was responsible for")',
+                'category': 'Content',
+                'issue': f'{verbs["passive_count"]} passive verbs detected',
+                'recommendation': 'Replace passive verbs with action verbs (e.g., "Managed" instead of "Was responsible for")',
                 'examples': verbs.get('passive_verbs', [])[:3]
             })
         
         if verbs.get('strong_count', 0) < 5:
             recommendations.append({
                 'priority': 'MEDIUM',
-                'category': 'Contenu',
-                'issue': 'Peu de verbes d\'action forts',
-                'recommendation': 'Utilisez plus de verbes d\'action impactants: achieved, implemented, led, optimized, etc.'
+                'category': 'Content',
+                'issue': 'Few strong action verbs',
+                'recommendation': 'Use more impactful action verbs: achieved, implemented, led, optimized, etc.'
             })
         
-        # Métriques manquantes
+        # Missing metrics
         metrics = analysis_results.get('metrics', {})
         if not metrics.get('has_metrics') or metrics.get('metrics_count', 0) < 3:
             recommendations.append({
                 'priority': 'HIGH',
                 'category': 'Impact',
-                'issue': 'Manque de résultats quantifiables',
-                'recommendation': 'Ajoutez des chiffres concrets: pourcentages, montants, nombre de projets/personnes, délais, etc.'
+                'issue': 'Lack of quantifiable results',
+                'recommendation': 'Add concrete numbers: percentages, amounts, number of projects/people, deadlines, etc.'
             })
         
-        # Problèmes de format
+        # Format issues
         format_analysis = analysis_results.get('format', {})
         if format_analysis.get('is_too_long'):
             recommendations.append({
                 'priority': 'MEDIUM',
                 'category': 'Format',
-                'issue': 'CV trop long',
-                'recommendation': f'Réduisez la longueur à 1-2 pages ({format_analysis["word_count"]} mots actuellement)'
+                'issue': 'CV too long',
+                'recommendation': f'Reduce length to 1-2 pages ({format_analysis["word_count"]} words currently)'
             })
         
-        # Mots de remplissage
+        # Filler words
         fillers = analysis_results.get('fillers', {})
         if fillers.get('has_too_many'):
             recommendations.append({
                 'priority': 'LOW',
                 'category': 'Style',
-                'issue': 'Mots de remplissage excessifs',
-                'recommendation': f'Supprimez les mots inutiles: {", ".join(fillers.get("filler_words", [])[:5])}',
+                'issue': 'Excessive filler words',
+                'recommendation': f'Remove unnecessary words: {", ".join(fillers.get("filler_words", [])[:5])}',
             })
         
         # Bullet points
@@ -810,8 +809,8 @@ class RecommendationEngine:
             recommendations.append({
                 'priority': 'MEDIUM',
                 'category': 'Format',
-                'issue': 'Manque de bullet points',
-                'recommendation': 'Utilisez des bullet points pour lister vos réalisations de manière claire'
+                'issue': 'Missing bullet points',
+                'recommendation': 'Use bullet points to clearly list your achievements'
             })
         
         # Trier par priorité
@@ -847,15 +846,15 @@ class ResumeAnalyzer:
         Returns:
             Dictionnaire contenant toute l'analyse
         """
-        print("🔍 Extraction du texte du PDF...")
+        print("🔍 Extracting text from PDF...")
         raw_text = self.pdf_extractor.extract_text_from_pdf(pdf_path)
         clean_text = self.pdf_extractor.clean_text(raw_text)
         #print(clean_text)
         
-        print("📧 Extraction des informations de contact...")
+        print("📧 Extracting contact information...")
         contacts = self.contact_extractor.extract_all_contacts(clean_text,pdf_path)
         
-        print("📑 Détection des sections...")
+        print("📑 Detecting sections...")
         sections = self.section_detector.detect_sections(raw_text)
         
         # Extraire le contenu de la section expérience pour analyse détaillée
@@ -863,14 +862,14 @@ class ResumeAnalyzer:
         for sec in sections:
             if sections[sec]:
                 print(self.section_detector.extract_section_content(raw_text, sec))
-        print("✍️ Analyse de la qualité du contenu...")
+        print("✍️ Analyzing content quality...")
         verb_analysis = self.quality_analyzer.analyze_verbs(experience_text if experience_text else clean_text)
         metrics = self.quality_analyzer.detect_quantifiable_achievements(clean_text)
         bullets = self.quality_analyzer.analyze_bullet_points(raw_text)
         fillers = self.quality_analyzer.check_filler_words(clean_text)
         sentence_structure = self.quality_analyzer.analyze_sentence_structure(clean_text)
         
-        print("📏 Analyse du format...")
+        print("📏 Analyzing format...")
         length_analysis = self.format_analyzer.analyze_length(clean_text)
         formatting_issues = self.format_analyzer.check_formatting_issues(clean_text)
         experience_duration = self.format_analyzer.extract_experience_duration(clean_text)
@@ -890,10 +889,10 @@ class ResumeAnalyzer:
             'experience_duration': experience_duration
         }
         
-        print("🎯 Calcul du score...")
+        print("🎯 Calculating score...")
         score = self.scorer.calculate_score(analysis_results)
         
-        print("💡 Génération des recommandations...")
+        print("💡 Generating recommendations...")
         recommendations = self.recommendation_engine.generate_recommendations(analysis_results)
         
         return {
@@ -915,66 +914,66 @@ class ResumeAnalyzer:
         }
     
     def generate_report(self, analysis_result: Dict) -> str:
-        """Génère un rapport textuel de l'analyse"""
+        """Generates text report of the analysis"""
         report = []
         report.append("=" * 60)
-        report.append("📊 RAPPORT D'ANALYSE DE CV")
+        report.append("📊 CV ANALYSIS REPORT")
         report.append("=" * 60)
         report.append("")
         
         # Score global
         summary = analysis_result['summary']
         score_info = analysis_result['score']
-        report.append(f"🎯 SCORE GLOBAL: {summary['total_score']}/100 - {summary['level']}")
+        report.append(f"🎯 OVERALL SCORE: {summary['total_score']}/100 - {summary['level']}")
         report.append("")
         
-        # Détail du score
-        report.append("📈 Détail du score:")
+        # Score breakdown
+        report.append("📈 Score Breakdown:")
         for category, points in score_info['breakdown'].items():
             report.append(f"  • {category.replace('_', ' ').title()}: {points} points")
         report.append("")
         
-        # Statistiques clés
+        # Key statistics
         analysis = analysis_result['analysis']
-        report.append("📊 STATISTIQUES:")
-        report.append(f"  • Nombre de mots: {analysis['format']['word_count']}")
-        report.append(f"  • Pages estimées: {analysis['format']['estimated_pages']}")
-        report.append(f"  • Années d'expérience: {analysis['experience_duration']['total_experience_years']}")
-        report.append(f"  • Verbes d'action forts: {analysis['verb_analysis']['strong_count']}")
-        report.append(f"  • Métriques quantifiables: {analysis['metrics']['metrics_count']}")
+        report.append("📊 STATISTICS:")
+        report.append(f"  • Word count: {analysis['format']['word_count']}")
+        report.append(f"  • Estimated pages: {analysis['format']['estimated_pages']}")
+        report.append(f"  • Years of experience: {analysis['experience_duration']['total_experience_years']}")
+        report.append(f"  • Strong action verbs: {analysis['verb_analysis']['strong_count']}")
+        report.append(f"  • Quantifiable metrics: {analysis['metrics']['metrics_count']}")
         report.append("")
         
         # Sections présentes
-        report.append("📑 SECTIONS DÉTECTÉES:")
+        report.append("📑 DETECTED SECTIONS:")
         for section, present in analysis['sections'].items():
             status = "✅" if present else "❌"
             report.append(f"  {status} {section.title()}")
         report.append("")
         
         # Informations de contact
-        report.append("📧 INFORMATIONS DE CONTACT:")
+        report.append("📧 CONTACT INFORMATION:")
         contacts = analysis['contacts']
-        report.append(f"  • Emails: {len(contacts['emails'])} trouvé(s)")
-        report.append(f"  • Téléphones: {len(contacts['phones'])} trouvé(s)")
-        report.append(f"  • Localisation: {contacts['location'] if contacts['location'] else 'Non trouvée'}")
-        report.append(f"  • LinkedIn: {'Oui' if contacts['linkedin'] else 'Non'}")
-        report.append(f"  • GitHub: {'Oui' if contacts['github'] else 'Non'}")
+        report.append(f"  • Emails: {len(contacts['emails'])} found")
+        report.append(f"  • Phones: {len(contacts['phones'])} found")
+        report.append(f"  • Location: {contacts['location'] if contacts['location'] else 'Not found'}")
+        report.append(f"  • LinkedIn: {'Yes' if contacts['linkedin'] else 'No'}")
+        report.append(f"  • GitHub: {'Yes' if contacts['github'] else 'No'}")
         report.append("")
         
-        # Recommandations
-        report.append("💡 RECOMMANDATIONS PRIORITAIRES:")
+        # Recommendations
+        report.append("💡 PRIORITY RECOMMENDATIONS:")
         recommendations = analysis_result['recommendations']
         
         high_priority = [r for r in recommendations if r['priority'] == 'HIGH']
         if high_priority:
-            report.append("\n  🔴 PRIORITÉ HAUTE:")
+            report.append("\n  🔴 HIGH PRIORITY:")
             for i, rec in enumerate(high_priority, 1):
                 report.append(f"    {i}. [{rec['category']}] {rec['issue']}")
                 report.append(f"       → {rec['recommendation']}")
         
         medium_priority = [r for r in recommendations if r['priority'] == 'MEDIUM']
         if medium_priority:
-            report.append("\n  🟡 PRIORITÉ MOYENNE:")
+            report.append("\n  🟡 MEDIUM PRIORITY:")
             for i, rec in enumerate(medium_priority, 1):
                 report.append(f"    {i}. [{rec['category']}] {rec['issue']}")
                 report.append(f"       → {rec['recommendation']}")
@@ -1005,63 +1004,62 @@ class ResumeAnalyzer:
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(export_data, f, indent=2, ensure_ascii=False)
-        # Déboggage pour afficher analysis_result dans la console 
+        # Debug: display analysis_result in console
         # print(analysis_result)
-        print(f"✅ Analyse exportée vers {output_path}")
-
+        print(f"✅ Analysis exported to {output_path}")
 
 # ============================================
-# 9. EXEMPLE D'UTILISATION
+# 9. USAGE EXAMPLE
 # ============================================
 
 def main():
     """
-    Exemple d'utilisation du système d'analyse de CV
+    Example usage of the Resume Analysis System
     """
     import sys
     
-    # Vérifier les arguments
+    # Check arguments
     if len(sys.argv) < 2:
-        print("Usage: python resume_analyzer.py <chemin_vers_cv.pdf>")
-        print("\nExemple:")
-        print("  python resume_analyzer.py mon_cv.pdf")
+        print("Usage: python resume_analyzer.py <path_to_cv.pdf>")
+        print("\nExample:")
+        print("  python resume_analyzer.py my_resume.pdf")
         return
     
     pdf_path = sys.argv[1]
     
     try:
-        # Créer l'analyseur
+        # Create the analyzer
         analyzer = ResumeAnalyzer()
         
-        print(f"\n🚀 Analyse du CV: {pdf_path}")
+        print(f"\n🚀 Analyzing resume: {pdf_path}")
         print("-" * 60)
         
-        # Analyser le CV
+        # Analyze the resume
         result = analyzer.analyze_resume(pdf_path)
         
-        # Afficher le rapport
+        # Display the report
         print("\n" + analyzer.generate_report(result))
         
-        # Exporter en JSON
+        # Export as JSON
         json_output = pdf_path.replace('.pdf', '_analysis.json')
         analyzer.export_to_json(result, json_output)
         
-        print(f"\n✨ Analyse terminée avec succès!")
-        print(f"📄 Rapport JSON sauvegardé: {json_output}")
+        print(f"\n✨ Analysis completed successfully!")
+        print(f"📄 JSON report saved to: {json_output}")
         
     except Exception as e:
-        print(f"\n❌ Erreur lors de l'analyse: {str(e)}")
+        print(f"\n❌ Error during analysis: {str(e)}")
         import traceback
         traceback.print_exc()
 
 
 # ============================================
-# 10. UTILISATION PROGRAMMATIQUE (pour intégration)
+# 10. PROGRAMMATIC USAGE (for integration)
 # ============================================
 
 class ResumeAnalyzerAPI:
     """
-    API simplifiée pour intégration dans votre application
+    Simplified API for integration into your application
     """
     
     def __init__(self):
@@ -1069,10 +1067,10 @@ class ResumeAnalyzerAPI:
     
     def analyze(self, pdf_path: str) -> Dict:
         """
-        Analyse un CV et retourne les résultats structurés
+        Analyzes a resume and returns structured results
         
         Returns:
-            Dict avec: score, recommendations, issues_to_fix
+            Dict with: score, recommendations, issues_to_fix
         """
         result = self.analyzer.analyze_resume(pdf_path)
         
@@ -1102,17 +1100,17 @@ class ResumeAnalyzerAPI:
     
     def get_text_to_improve(self, pdf_path: str) -> List[Dict]:
         """
-        Extrait les sections spécifiques à améliorer pour envoyer au LLM
+        Extracts specific sections to improve for LLM suggestions
         
         Returns:
-            Liste de sections avec leurs problèmes identifiés
+            List of sections with identified issues
         """
         result = self.analyzer.analyze_resume(pdf_path)
         analysis = result['analysis']
         
         sections_to_improve = []
         
-        # Section expérience avec verbes faibles
+        # Experience section with weak verbs
         experience_text = self.analyzer.section_detector.extract_section_content(
             analysis['clean_text'], 
             'experience'
@@ -1123,8 +1121,8 @@ class ResumeAnalyzerAPI:
                 'section': 'experience',
                 'text': experience_text,
                 'issues': [
-                    'Remplacer les verbes passifs et faibles par des verbes d\'action',
-                    'Ajouter des résultats quantifiables'
+                    "Replace passive and weak verbs with strong action verbs",
+                    "Add quantifiable achievements"
                 ],
                 'weak_verbs': analysis['verb_analysis']['weak_verbs'],
                 'passive_verbs': analysis['verb_analysis']['passive_verbs']
@@ -1136,5 +1134,3 @@ class ResumeAnalyzerAPI:
 
 if __name__ == "__main__":
     main()
-
-
